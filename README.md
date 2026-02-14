@@ -14,12 +14,12 @@ Cyclistic is a bike-shared company with more than 5,800 bykes and 600 docking st
 
 **Objective**: Objectives: Design an new marketing strategy to convert casual riders into annual members. 
 
-##Data Cleaning & Manipulation Log
+## Data Cleaning & Manipulation Log
 
 Entry 1 — Gender Variable Review
 
 Prompt:  
-data2019 %>% select(gender)
+`data2019 %>% select(gender)`
 
 Journal Entry:  
 The dataset appears to contain three distinct gender entries. The six‑letter value corresponds to “Female.”
@@ -38,11 +38,10 @@ Insights:
 Entry 2 — Oldest and Youngest Participants
 
 Prompt:
-Code
-
-data2019 %>% arrange(-birthyear)   # youngest  
+```R
+data2019 %>% arrange(-birthyear)   # youngest 
 data2019 %>% arrange(birthyear)    # oldest
-
+```
 Journal Entry:  
 I used these queries to validate whether the minimum and maximum ages were logical.
 
@@ -62,7 +61,7 @@ Additional Insight:
 Entry 3 — Gender and Subscription Type
 
 Prompt:  
-SELECT DISTINCT usertype, gender FROM refined-gist-464518-g3.cyclistic.Trips2019 WHERE usertype IS NOT NULL AND gender IS NOT NULL LIMIT 50
+`SELECT DISTINCT usertype, gender FROM refined-gist-464518-g3.cyclistic.Trips2019 WHERE usertype IS NOT NULL AND gender IS NOT NULL LIMIT 50`
 
 Journal Entry:  
 I checked for misspellings or inconsistencies between gender and user type. The data appears mostly clean in this regard.
@@ -73,20 +72,22 @@ Entry 4 — Trip Duration Review
 
 Prompt:
 Code
-
+```MySQL
 SELECT trip_id, tripduration 
 FROM refined-gist-464518-g3.cyclistic.Trips2019 
 WHERE tripduration IS NOT NULL 
 ORDER BY tripduration DESC 
 LIMIT 500;
-
+```
+```MySQL
 SELECT * FROM refined-gist-464518-g3.cyclistic.Trips2019 
 WHERE trip_id = 21920842;
-
+```
+```MySQL
 SELECT * FROM refined-gist-464518-g3.cyclistic.Trips2019 
 WHERE bikeid = 3846 
 ORDER BY tripduration DESC;
-
+```
 Journal Entry:  
 A trip duration of 10,628,400 seconds equals approximately 2,952.33 hours, or 123 days.
 
@@ -95,7 +96,7 @@ This is almost certainly a test entry or a malfunctioning bike.
 Entry 5 — NULL Value Assessment
 
 Prompt:  
-SELECT * FROM refined-gist-464518-g3.cyclistic.Trips2019 WHERE usertype IS NULL
+`SELECT * FROM refined-gist-464518-g3.cyclistic.Trips2019 WHERE usertype IS NULL`
 
 Journal Entry:  
 Only the gender and birthyear columns contain NULL values.
@@ -185,13 +186,13 @@ Gender Distribution Among Specified Records Only
 
     Female: 19.4%
 
-sql
+```MySQL
 
 SELECT gender, COUNT(*) AS frequence 
 FROM refined-gist-464518-g3.cyclistic.Trips2019
 GROUP BY gender
 ORDER BY frequence DESC;
-
+```
 2. Average Age in 2019 Dataset
 
 The 2020 table does not include an age or birth year column.
@@ -199,38 +200,38 @@ Overall Average Birth Year
 
     Average birth year: 1981.67 → ~38 years old
 
-sql
+```MySQL
 
 SELECT AVG(birthyear) AS average 
 FROM refined-gist-464518-g3.cyclistic.Trips2019;
-
+```
 Total Valid Birth Year Records
 
     347,046 non-null birth years
 
-sql
+```MySQL
 
 SELECT COUNT(birthyear) AS total_rows 
 FROM refined-gist-464518-g3.cyclistic.Trips2019;
-
+```
 Average Age by User Type
 
     Subscriber: 1981.55 → ~38 years
 
     Customer: 1989.44 → ~30 years
 
-sql
+```MySQL
 
 SELECT usertype, AVG(birthyear) 
 FROM refined-gist-464518-g3.cyclistic.Trips2019 
 WHERE birthyear >= 1918 
 GROUP BY usertype;
-
+```
 3. Creating a Unified Table (2019 + 2020)
 
 A combined table was created using UNION ALL, keeping only the most relevant columns.
 sql
-
+```MySQL
 CREATE OR REPLACE TABLE refined-gist-464518-g3.cyclistic.TripsUnified AS 
 SELECT 
   CAST(trip_id AS string) AS id, 
@@ -238,9 +239,9 @@ SELECT
   ride_length, 
   day_of_week
 FROM refined-gist-464518-g3.cyclistic.Trips2019
-
+```
 UNION ALL
-
+```MySQL
 SELECT 
   ride_id AS id,
   CASE
@@ -251,13 +252,13 @@ SELECT
   ride_length,
   day_of_week
 FROM refined-gist-464518-g3.cyclistic.Trips2020;
-
+```
 4. Standardizing Trip Duration (Converting to Seconds)
 
 Trip duration was originally stored as "HH:MM:SS".
 The following query converts it to seconds:
 sql
-
+```MySQL
 SELECT id, user_type, day_of_week, ride_length_seconds 
 FROM (
   SELECT 
@@ -270,9 +271,9 @@ FROM (
   FROM `refined-gist-464518-g3.cyclistic.TripsUnified`
 )
 WHERE ride_length_seconds >= 0;
-
+```
 5. Gender Usage by User Type
-sql
+```MySQL
 
 SELECT
   usertype,
@@ -283,22 +284,23 @@ WHERE birthyear >= 1918
   AND usertype IS NOT NULL
   AND gender IS NOT NULL
 GROUP BY usertype, gender;
-
+```
 Results
 usertype	gender	count	percentage
 Subscriber	Female	65,043	19.18%
 Subscriber	Male	274,311	80.82%
 Customer	Male	4,059	68.39%
 Customer	Female	1,875	31.61%
+
 6. Ride Frequency by Day of Week (Subscribers Only)
 sql
-
+```MySQL
 SELECT day_of_week, COUNT(day_of_week) AS most_frequent 
 FROM `refined-gist-464518-g3.cyclistic.TripsCleaned` 
 WHERE user_type = 'Subscriber' 
 GROUP BY day_of_week 
 ORDER BY most_frequent DESC;
-
+```
 Overall Day-of-Week Frequency
 Day	Trips
 Tuesday	135,758
@@ -326,9 +328,11 @@ Wednesday	8,333
 Tuesday	7,915
 Thursday	7,734
 Monday	6,688
-7. Creating a Permanent Cleaned View
-sql
 
+
+7. Creating a Permanent Cleaned View
+
+```MySQL
 CREATE OR REPLACE VIEW refined-gist-464518-g3.cyclistic.TripsCleaned AS
 SELECT
   id,
@@ -341,22 +345,22 @@ FROM refined-gist-464518-g3.cyclistic.TripsUnified
 WHERE SAFE_CAST(SPLIT(ride_length, ':')[OFFSET(0)] AS INT64) * 3600 +
       SAFE_CAST(SPLIT(ride_length, ':')[OFFSET(1)] AS INT64) * 60 +
       SAFE_CAST(SPLIT(ride_length, ':')[OFFSET(2)] AS INT64) >= 0;
-
+```
 8. Seasonal Trends (Jan–Mar Only)
 
 Both datasets returned only the first three months when extracting monthly trends.
 2020 Monthly Trips
-sql
 
+```MySQL
 SELECT
   EXTRACT(MONTH FROM started_date) AS trip_month,
   COUNT(*) AS trips
 FROM refined-gist-464518-g3.cyclistic.Trips2020
 GROUP BY trip_month
 ORDER BY trip_month;
-
-2019 Monthly Trips
-sql
+```
+####2019 Monthly Trips
+```MySQL
 
 SELECT
   EXTRACT(MONTH FROM start_date) AS trip_month,
@@ -364,7 +368,7 @@ SELECT
 FROM refined-gist-464518-g3.cyclistic.Trips2019
 GROUP BY trip_month
 ORDER BY trip_month;
-
+```
 9. Key Insights & Next Steps
 Trip Duration
 
@@ -388,12 +392,4 @@ Gender
 
     Null: 5.40%
 
-Next Steps
 
-    Visualize gender distribution by user type (bar chart recommended)
-
-    Explore seasonal patterns further (possible missing months in source data)
-
-    Investigate whether long-duration trips are errors or special cases
-
-    Analyze correlation between holidays and casual riders
